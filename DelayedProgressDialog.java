@@ -106,11 +106,11 @@ public class DelayedProgressDialog extends DialogFragment {
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    dismiss();
+                    dismissAllowingStateLoss();
                 }
             }, SHOW_MIN_MILLISECOND);
         } else {
-            dismiss();
+            dismissAllowingStateLoss();
         }
     }
 
@@ -119,7 +119,7 @@ public class DelayedProgressDialog extends DialogFragment {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                dismiss();
+                dismissAllowingStateLoss();
             }
         }, DELAY_MILLISECOND);
     }
