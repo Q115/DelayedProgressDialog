@@ -85,7 +85,9 @@ public class DelayedProgressDialog extends DialogFragment {
 
     private void showDialogAfterDelay(FragmentManager fm, String tag) {
         startedShowing = true;
-        super.show(fm, tag);
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(this, tag);
+        ft.commitAllowingStateLoss();
     }
 
     public void cancel() {
