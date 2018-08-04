@@ -14,7 +14,7 @@ import android.view.LayoutInflater;
 import android.widget.ProgressBar;
 
 /*
- * Copyright 2017 Qi Li
+ * Copyright 2018 Qi Li
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,17 @@ import android.widget.ProgressBar;
 
 public class DelayedProgressDialog extends DialogFragment {
     private static final int DELAY_MILLISECOND = 450;
-    private static final int SHOW_MIN_MILLISECOND = 300;
+    private static final int MINIMUM_SHOW_DURATION_MILLISECOND = 300;
     private static final int PROGRESS_CONTENT_SIZE_DP = 80;
 
     private ProgressBar mProgressBar;
     private boolean startedShowing;
     private long mStartMillisecond;
     private long mStopMillisecond;
+
+    private FragmentManager fragmentManager;
+    private String tag;
+    private Handler showHandler;
 
     // default constructor. Needed so rotation doesn't crash
     public DelayedProgressDialog() {
@@ -68,30 +72,46 @@ public class DelayedProgressDialog extends DialogFragment {
     }
 
     @Override
-    public void show(final FragmentManager fm, final String tag) {
+    public void show(FragmentManager fm, String tag) {
+        if (isAdded())
+            return;
+
+        this.fragmentManager = fm;
+        this.tag = tag;
         mStartMillisecond = System.currentTimeMillis();
         startedShowing = false;
         mStopMillisecond = Long.MAX_VALUE;
 
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+        showHandler = new Handler();
+        showHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                // only show if not already cancelled
                 if (mStopMillisecond > System.currentTimeMillis())
-                    showDialogAfterDelay(fm, tag);
+                    showDialogAfterDelay();
             }
         }, DELAY_MILLISECOND);
     }
 
-    private void showDialogAfterDelay(FragmentManager fm, String tag) {
+    private void showDialogAfterDelay() {
         startedShowing = true;
-        FragmentTransaction ft = fm.beginTransaction();
-        ft.add(this, tag);
-        ft.commitAllowingStateLoss();
+
+        DialogFragment dialogFragment = (DialogFragment) fragmentManager.findFragmentByTag(tag);
+        if (dialogFragment != null) {
+            fragmentManager.beginTransaction().show(dialogFragment).commitAllowingStateLoss();
+        } else {
+            FragmentTransaction ft = fragmentManager.beginTransaction();
+            ft.add(this, tag);
+            ft.commitAllowingStateLoss();
+        }
     }
 
     public void cancel() {
+        if(showHandler == null)
+            return;
+
         mStopMillisecond = System.currentTimeMillis();
+        showHandler.removeCallbacksAndMessages(null);
 
         if (startedShowing) {
             if (mProgressBar != null) {
@@ -99,20 +119,21 @@ public class DelayedProgressDialog extends DialogFragment {
             } else {
                 cancelWhenNotShowing();
             }
-        }
+        } else
+            dismiss();
     }
 
     private void cancelWhenShowing() {
-        if (mStopMillisecond < mStartMillisecond + DELAY_MILLISECOND + SHOW_MIN_MILLISECOND) {
+        if (mStopMillisecond < mStartMillisecond + DELAY_MILLISECOND + MINIMUM_SHOW_DURATION_MILLISECOND) {
             final Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    dismissAllowingStateLoss();
+                    dismiss();
                 }
-            }, SHOW_MIN_MILLISECOND);
+            }, MINIMUM_SHOW_DURATION_MILLISECOND);
         } else {
-            dismissAllowingStateLoss();
+            dismiss();
         }
     }
 
@@ -121,8 +142,15 @@ public class DelayedProgressDialog extends DialogFragment {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                dismissAllowingStateLoss();
+                dismiss();
             }
         }, DELAY_MILLISECOND);
+    }
+
+    @Override
+    public void dismiss() {
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        ft.remove(this);
+        ft.commitAllowingStateLoss();
     }
 }
