@@ -20,7 +20,7 @@ Just copy dialog_progress.xml to your layout directory, and DelayedProgressDialo
 ProgressDialog with a loading icon will appear after DELAY_MILLISECOND if it's not cancelled before then. Content will show for MINIMUM_SHOW_DURATION_MILLISECOND. Change the values to suit your liking.
 
     private static final int DELAY_MILLISECOND = 450;
-    private static final int SHOW_MIN_MILLISECOND = 300;
+    private static final int MINIMUM_SHOW_DURATION_MILLISECOND = 300;
     
 dialog_progress.xml just shows a ProgressBar, you can add other Views to layout if desired.
 
